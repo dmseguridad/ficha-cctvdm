@@ -1,8 +1,9 @@
-const CACHE = 'dm-fichas-v1';
+const CACHE = 'dm-fichas-v2';
 const SHELL = [
   './', './manifest.json', './icon.svg', './logo.png',
   './cctv/index.html', './cctv/logo.png',
-  './vehicular/index.html', './vehicular/logo.png'
+  './vehicular/index.html', './vehicular/logo.png',
+  './alarmas/index.html', './alarmas/logo.png'
 ];
 
 self.addEventListener('install', e => {
