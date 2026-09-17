@@ -369,6 +369,8 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
           <button class="tool-btn" data-tool="pin-int"><span class="dot" style="background:var(--signal)"></span>Cámara interior</button>
           <button class="tool-btn" data-tool="mark-dvr">📼 Grabador</button>
           <button class="tool-btn" data-tool="mark-router">📶 Router WiFi</button>
+          <button class="tool-btn" data-tool="line-utp">🔵 Cable UTP</button>
+          <button class="tool-btn" data-tool="line-elec">🔴 Cable eléctrico</button>
           <div class="spacer"></div>
           <button class="tool-btn" id="btnUndo">↩ Deshacer</button>
           <button class="tool-btn" id="btnClearCanvas">🗑 Limpiar croquis</button>
@@ -379,6 +381,8 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
           <span><span class="sw" style="background:var(--signal)"></span>Cámara interior (numerada al colocarla)</span>
           <span>📼 Grabador (DVR/NVR)</span>
           <span>📶 Router WiFi</span>
+          <span>🔵 Cable UTP</span>
+          <span>🔴 Cable eléctrico</span>
         </div>
         <div class="canvas-hint">Dibuje muros, accesos y linderos con el lápiz, o use "Rectángulo" (arrastre para dibujar un cuarto o el perímetro). Los botones de cámara, grabador y router numeran o marcan la posición al tocar el croquis. Cada cámara marcada se agrega automáticamente al inventario de la sección 03 (también puede seguir agregando cámaras manualmente ahí).</div>
       </section>
@@ -820,6 +824,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
   let drawingRect = false, rectStart = null, rectSnapshot = null;
   let undoStack = [];
   let pinExt = 0, pinInt = 0, dvrCount = 0, routerCount = 0;
+  const LINE_COLORS = { 'line-utp': '#2F6FE0', 'line-elec': '#D93B3B' };
   let croquisTouched = false;
 
   function sizeCanvas(){
@@ -939,7 +944,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       stampMarker(x,y,tool);
       return;
     }
-    if(tool==='rect'){
+    if(tool==='rect' || tool.indexOf('line-')===0){
       rectStart = [x,y];
       rectSnapshot = ctx.getImageData(0,0,canvas.width,canvas.height);
       drawingRect = true;
@@ -952,10 +957,18 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       e.preventDefault();
       const [x,y] = canvasPos(e);
       ctx.putImageData(rectSnapshot, 0, 0);
-      const rx = Math.min(rectStart[0], x), ry = Math.min(rectStart[1], y);
-      const rw = Math.abs(x-rectStart[0]), rh = Math.abs(y-rectStart[1]);
-      ctx.strokeStyle = getCss('--ink'); ctx.lineWidth = 2; ctx.setLineDash([]);
-      ctx.strokeRect(rx, ry, rw, rh);
+      if(tool==='rect'){
+        const rx = Math.min(rectStart[0], x), ry = Math.min(rectStart[1], y);
+        const rw = Math.abs(x-rectStart[0]), rh = Math.abs(y-rectStart[1]);
+        ctx.strokeStyle = getCss('--ink'); ctx.lineWidth = 2; ctx.setLineDash([]);
+        ctx.strokeRect(rx, ry, rw, rh);
+      } else if(LINE_COLORS[tool]){
+        ctx.strokeStyle = LINE_COLORS[tool]; ctx.lineWidth = 3.5; ctx.lineCap = 'round'; ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(rectStart[0], rectStart[1]);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
       return;
     }
     if(!drawing) return;
