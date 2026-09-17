@@ -733,10 +733,12 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
   });
 
   /* ---------- folio & fecha ---------- */
+  const FOLIO_KEY = 'cctv_folio_next';
   function genFolio(){
-    const d = new Date();
-    const p = n => String(n).padStart(2,'0');
-    return 'CCTV-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+String(Math.floor(Math.random()*900+100));
+    let next = parseInt(localStorage.getItem(FOLIO_KEY), 10);
+    if(!next || next < 1000) next = 1000;
+    try{ localStorage.setItem(FOLIO_KEY, String(next+1)); }catch(e){}
+    return 'CCTV-'+next;
   }
   function setDefaultDate(){ $('#fecha').value = new Date().toISOString().slice(0,10); }
 
