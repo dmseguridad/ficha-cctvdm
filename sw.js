@@ -1,6 +1,6 @@
-const CACHE = 'dm-fichas-v4';
+const CACHE = 'dm-fichas-v5';
 const SHELL = [
-  './', './manifest.json', './icon.svg', './logo.png',
+  './', './manifest.json', './icon.svg', './logo.png', './apple-touch-icon.png',
   './cctv/index.html', './cctv/logo.png',
   './vehicular/index.html', './vehicular/logo.png',
   './alarmas/index.html', './alarmas/logo.png',
