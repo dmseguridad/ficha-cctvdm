@@ -368,19 +368,19 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
           <button class="tool-btn" data-tool="pin-ext"><span class="dot" style="background:var(--accent)"></span>Sensor exterior</button>
           <button class="tool-btn" data-tool="pin-int"><span class="dot" style="background:var(--signal)"></span>Sensor interior</button>
           <button class="tool-btn" data-tool="mark-dvr">🎛 Panel de control</button>
-          <button class="tool-btn" data-tool="mark-router">🔔 Sirena</button>
+          <button class="tool-btn" data-tool="mark-router">⌨ Teclado</button>
           <div class="spacer"></div>
           <button class="tool-btn" id="btnUndo">↩ Deshacer</button>
           <button class="tool-btn" id="btnClearCanvas">🗑 Limpiar croquis</button>
         </div>
         <div class="canvas-wrap"><canvas id="croquis"></canvas></div>
         <div class="legend">
-          <span><span class="sw" style="background:var(--accent)"></span>Sensor exterior (numerado al colocarlo)</span>
-          <span><span class="sw" style="background:var(--signal)"></span>Sensor interior (numerado al colocarlo)</span>
+          <span><span class="sw" style="background:var(--accent)"></span>Sensor/dispositivo exterior (numerado al colocarlo)</span>
+          <span><span class="sw" style="background:var(--signal)"></span>Sensor/dispositivo interior (numerado al colocarlo)</span>
           <span>🎛 Panel de control</span>
-          <span>🔔 Sirena</span>
+          <span>⌨ Teclado</span>
         </div>
-        <div class="canvas-hint">Dibuje muros, accesos y linderos con el lápiz, o use "Rectángulo" (arrastre para dibujar un cuarto o el perímetro). Los botones de sensor, panel y sirena numeran o marcan la posición al tocar el croquis. Cada sensor marcado se agrega automáticamente al inventario de la sección 03 (también puede seguir agregando sensores manualmente ahí).</div>
+        <div class="canvas-hint">Dibuje muros, accesos y linderos con el lápiz, o use "Rectángulo" (arrastre para dibujar un cuarto o el perímetro). Los botones de sensor, panel y teclado numeran o marcan la posición al tocar el croquis. Cada sensor marcado se agrega automáticamente al inventario de la sección 03, donde puede elegir el tipo exacto (contacto, movimiento, impacto, sirena...). También puede seguir agregando dispositivos manualmente ahí.</div>
       </section>
 
       <!-- 3 INVENTARIO -->
@@ -437,6 +437,14 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
         <div class="mat-row">
           <div class="lab">Repetidores de señal inalámbrica<small>Para zonas alejadas del panel</small></div>
           <input id="matSD" type="number" min="0" value="0">
+        </div>
+        <div class="mat-row">
+          <div class="lab">Expansores de zonas<small>Para ampliar zonas inalámbricas del panel</small></div>
+          <input id="matExpansores" type="number" min="0" value="0">
+        </div>
+        <div class="mat-row">
+          <div class="lab">Módulos de relay<small>Para activar dispositivos externos desde el panel</small></div>
+          <input id="matRelay" type="number" min="0" value="0">
         </div>
 
         <div class="divider-label">Recubrimiento del cableado</div>
@@ -752,7 +760,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     tr.dataset.id = camSeq;
     tr.innerHTML = `
       <td class="num">${camSeq}</td>
-      <td><select class="c-tipo"><option>Movimiento (PIR)</option><option>Contacto magnético</option><option>Rotura de vidrio</option><option>Humo/Calor</option><option>Inundación</option><option>Botón de pánico</option></select></td>
+      <td><select class="c-tipo"><option>Sensor de movimiento</option><option>Contacto de puerta</option><option>Contacto de ventana</option><option>Contacto puerta Lanford</option><option>Sensor de impacto (rotura de vidrio)</option><option>Sirena</option><option>Sirena de perifoneo</option></select></td>
       <td><select class="c-ubic"><option>Exterior</option><option>Interior</option></select></td>
       <td><select class="c-modo"><option>Alámbrico</option><option>Inalámbrico</option><option>Híbrido</option></select></td>
       <td><input class="c-ref" placeholder="Ej. sala, cochera, puerta principal..."></td>
@@ -760,7 +768,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     `;
     camBody.appendChild(tr);
     if(data){
-      tr.querySelector('.c-tipo').value = data.tipo || 'Movimiento (PIR)';
+      tr.querySelector('.c-tipo').value = data.tipo || 'Sensor de movimiento';
       tr.querySelector('.c-ubic').value = data.ubic || 'Exterior';
       tr.querySelector('.c-modo').value = data.modo || 'Alámbrico';
       tr.querySelector('.c-ref').value = data.ref || '';
@@ -896,15 +904,14 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       ctx.beginPath(); ctx.arc(x-4, y, 2.3, 0, Math.PI*2); ctx.fill();
       ctx.beginPath(); ctx.arc(x+4, y, 2.3, 0, Math.PI*2); ctx.fill();
     } else {
-      /* siren / bell icon */
-      ctx.beginPath();
-      ctx.arc(x, y-1, 8, Math.PI, 0, false);
-      ctx.lineTo(x+11, y+7);
-      ctx.lineTo(x-11, y+7);
-      ctx.closePath();
-      ctx.fill();
-      ctx.beginPath(); ctx.arc(x, y+9, 2.2, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(x, y-9, 2, 0, Math.PI*2); ctx.fill();
+      /* keypad icon: grid of buttons */
+      for(let r=-1;r<=1;r++){
+        for(let c=-1;c<=1;c++){
+          ctx.beginPath();
+          ctx.arc(x+c*6, y+r*5, 1.6, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
     }
 
     if(n>1){
@@ -1070,6 +1077,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       matCamaras: camBody.children.length, matCajas: $('#matCajas').value,
       matBalun: $('#matBalun').value, matBorneras: $('#matBorneras').value,
       matSD: $('#matSD').value, matDiscos: $('#matDiscos').value, matDiscoCap: $('#matDiscoCap').value,
+      matExpansores: $('#matExpansores').value, matRelay: $('#matRelay').value,
       grabador: (document.querySelector('input[name=grabador]:checked')||{}).value || '',
       canales: (document.querySelector('input[name=canales]:checked')||{}).value || '',
       recCanaleta: $('#recCanaleta').checked, recCanaletaM: $('#recCanaletaM').value,
@@ -1107,6 +1115,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     $('#matCajas').value = d.matCajas||0;
     $('#matBalun').value = d.matBalun||0; $('#matBorneras').value = d.matBorneras||0;
     $('#matSD').value = d.matSD||0; $('#matDiscos').value = d.matDiscos||0; $('#matDiscoCap').value = d.matDiscoCap||'';
+    $('#matExpansores').value = d.matExpansores||0; $('#matRelay').value = d.matRelay||0;
     if(d.grabador){ const r=document.querySelector(`input[name=grabador][value="${d.grabador}"]`); if(r) r.checked=true; }
     if(d.canales){ const r=document.querySelector(`input[name=canales][value="${d.canales}"]`); if(r) r.checked=true; }
     $('#recCanaleta').checked = !!d.recCanaleta; $('#recCanaletaM').value = d.recCanaletaM||'';
@@ -1142,7 +1151,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     setDefaultDate();
     camBody.innerHTML=''; camSeq=0; recalc();
     const r=canvas.getBoundingClientRect(); ctx.clearRect(0,0,r.width,r.height); pinExt=0; pinInt=0; dvrCount=0; routerCount=0; undoStack=[];
-    ['matCajas','matBalun','matBorneras','matSD','matDiscos','puntosElectricos'].forEach(id=>$('#'+id).value=0);
+    ['matCajas','matBalun','matBorneras','matSD','matDiscos','puntosElectricos','matExpansores','matRelay'].forEach(id=>$('#'+id).value=0);
     $('#matDiscoCap').value='';
     ['recCanaletaM','recPvcM','recEmtM','recMangueraM','recGrapasCant'].forEach(id=>$('#'+id).value='');
     ['recCanaleta','recPvc','recEmt','recManguera','recGrapas'].forEach(id=>$('#'+id).checked=false);
