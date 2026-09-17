@@ -431,16 +431,12 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
           <input id="matCajas" type="number" min="0" value="0">
         </div>
         <div class="mat-row">
-          <div class="lab">Pares de balun<small>Solo si hay frentes análogos por UTP</small></div>
+          <div class="lab">Fuentes para chapa eléctrica<small>Alimentación dedicada para apertura de chapa / electroimán</small></div>
           <input id="matBalun" type="number" min="0" value="0">
         </div>
         <div class="mat-row">
           <div class="lab">Pares de borneras<small>Empalmes de alimentación en campo</small></div>
           <input id="matBorneras" type="number" min="0" value="0">
-        </div>
-        <div class="mat-row">
-          <div class="lab">Distribuidores de video / splitters<small>Para 1 frente con varias pantallas</small></div>
-          <input id="matSD" type="number" min="0" value="0">
         </div>
 
         <div class="divider-label">Recubrimiento del cableado</div>
@@ -480,21 +476,19 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
           </select>
         </div>
         <div class="mat-row">
-          <div class="lab">¿Requiere distribuidor / switch PoE?</div>
+          <div class="lab">Tipo de switch<small>Para distribuir el video a varias pantallas</small></div>
           <div class="radio-row">
-            <label class="radio-chip"><input type="radio" name="grabador" value="Si"><span>Sí</span></label>
-            <label class="radio-chip"><input type="radio" name="grabador" value="No"><span>No</span></label>
-            <label class="radio-chip"><input type="radio" name="grabador" value="Ya tiene"><span>Ya tiene</span></label>
+            <label class="radio-chip"><input type="radio" name="grabador" value="Normal"><span>Normal</span></label>
+            <label class="radio-chip"><input type="radio" name="grabador" value="PoE"><span>PoE</span></label>
+            <label class="radio-chip"><input type="radio" name="grabador" value="No requiere"><span>No requiere</span></label>
           </div>
         </div>
         <div class="mat-row">
-          <div class="lab">Cantidad de pantallas totales</div>
+          <div class="lab">Canales del switch</div>
           <div class="radio-row">
-            <label class="radio-chip"><input type="radio" name="canales" value="1"><span>1</span></label>
-            <label class="radio-chip"><input type="radio" name="canales" value="2"><span>2</span></label>
-            <label class="radio-chip"><input type="radio" name="canales" value="3"><span>3</span></label>
             <label class="radio-chip"><input type="radio" name="canales" value="4"><span>4</span></label>
-            <label class="radio-chip"><input type="radio" name="canales" value="5+"><span>5+</span></label>
+            <label class="radio-chip"><input type="radio" name="canales" value="8"><span>8</span></label>
+            <label class="radio-chip"><input type="radio" name="canales" value="16"><span>16</span></label>
           </div>
         </div>
 
@@ -1116,7 +1110,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       camaras: readCamRows(),
       matCamaras: camBody.children.length, matCajas: $('#matCajas').value,
       matBalun: $('#matBalun').value, matBorneras: $('#matBorneras').value,
-      matSD: $('#matSD').value, matDiscos: $('#matDiscos').value, matDiscoCap: $('#matDiscoCap').value,
+      matDiscos: $('#matDiscos').value, matDiscoCap: $('#matDiscoCap').value,
       grabador: (document.querySelector('input[name=grabador]:checked')||{}).value || '',
       canales: (document.querySelector('input[name=canales]:checked')||{}).value || '',
       recCanaleta: $('#recCanaleta').checked, recCanaletaM: $('#recCanaletaM').value,
@@ -1153,7 +1147,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
 
     $('#matCajas').value = d.matCajas||0;
     $('#matBalun').value = d.matBalun||0; $('#matBorneras').value = d.matBorneras||0;
-    $('#matSD').value = d.matSD||0; $('#matDiscos').value = d.matDiscos||0; $('#matDiscoCap').value = d.matDiscoCap||'';
+    $('#matDiscos').value = d.matDiscos||0; $('#matDiscoCap').value = d.matDiscoCap||'';
     if(d.grabador){ const r=document.querySelector(`input[name=grabador][value="${d.grabador}"]`); if(r) r.checked=true; }
     if(d.canales){ const r=document.querySelector(`input[name=canales][value="${d.canales}"]`); if(r) r.checked=true; }
     $('#recCanaleta').checked = !!d.recCanaleta; $('#recCanaletaM').value = d.recCanaletaM||'';
@@ -1189,7 +1183,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     setDefaultDate();
     camBody.innerHTML=''; camSeq=0; recalc();
     const r=canvas.getBoundingClientRect(); ctx.clearRect(0,0,r.width,r.height); pinExt=0; pinInt=0; dvrCount=0; routerCount=0; undoStack=[];
-    ['matCajas','matBalun','matBorneras','matSD','matDiscos','puntosElectricos'].forEach(id=>$('#'+id).value=0);
+    ['matCajas','matBalun','matBorneras','matDiscos','puntosElectricos'].forEach(id=>$('#'+id).value=0);
     $('#matDiscoCap').value='';
     ['recCanaletaM','recPvcM','recEmtM','recMangueraM','recGrapasCant'].forEach(id=>$('#'+id).value='');
     ['recCanaleta','recPvc','recEmt','recManguera','recGrapas'].forEach(id=>$('#'+id).checked=false);
