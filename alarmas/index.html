@@ -369,18 +369,40 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
           <button class="tool-btn" data-tool="pin-int"><span class="dot" style="background:var(--signal)"></span>Sensor interior</button>
           <button class="tool-btn" data-tool="mark-dvr">🎛 Panel de control</button>
           <button class="tool-btn" data-tool="mark-router">⌨ Teclado</button>
+          <button class="tool-btn" data-tool="mark-cpuerta">🚪 Contacto puerta</button>
+          <button class="tool-btn" data-tool="mark-cventana">🪟 Contacto ventana</button>
+          <button class="tool-btn" data-tool="mark-clanford">🔗 Contacto Lanford</button>
+          <button class="tool-btn" data-tool="mark-impacto">💥 Sensor impacto</button>
+          <button class="tool-btn" data-tool="mark-sirena">🔔 Sirena</button>
+          <button class="tool-btn" data-tool="mark-perifoneo">📢 Sirena perifoneo</button>
+          <button class="tool-btn" data-tool="mark-expansor">🧩 Expansor</button>
+          <button class="tool-btn" data-tool="mark-relay">🔀 Relay</button>
+          <button class="tool-btn" data-tool="line-utp">🔵 Cable UTP</button>
+          <button class="tool-btn" data-tool="line-elec">🔴 Cable eléctrico</button>
+          <button class="tool-btn" data-tool="line-sensor">🟡 Cable de sensores</button>
           <div class="spacer"></div>
           <button class="tool-btn" id="btnUndo">↩ Deshacer</button>
           <button class="tool-btn" id="btnClearCanvas">🗑 Limpiar croquis</button>
         </div>
         <div class="canvas-wrap"><canvas id="croquis"></canvas></div>
         <div class="legend">
-          <span><span class="sw" style="background:var(--accent)"></span>Sensor/dispositivo exterior (numerado al colocarlo)</span>
-          <span><span class="sw" style="background:var(--signal)"></span>Sensor/dispositivo interior (numerado al colocarlo)</span>
-          <span>🎛 Panel de control</span>
+          <span><span class="sw" style="background:var(--accent)"></span>Sensor exterior</span>
+          <span><span class="sw" style="background:var(--signal)"></span>Sensor interior</span>
+          <span>🎛 Panel</span>
           <span>⌨ Teclado</span>
+          <span>🚪 Puerta</span>
+          <span>🪟 Ventana</span>
+          <span>🔗 Lanford</span>
+          <span>💥 Impacto</span>
+          <span>🔔 Sirena</span>
+          <span>📢 Perifoneo</span>
+          <span>🧩 Expansor</span>
+          <span>🔀 Relay</span>
+          <span>🔵 UTP</span>
+          <span>🔴 Eléctrico</span>
+          <span>🟡 Sensores</span>
         </div>
-        <div class="canvas-hint">Dibuje muros, accesos y linderos con el lápiz, o use "Rectángulo" (arrastre para dibujar un cuarto o el perímetro). Los botones de sensor, panel y teclado numeran o marcan la posición al tocar el croquis. Cada sensor marcado se agrega automáticamente al inventario de la sección 03, donde puede elegir el tipo exacto (contacto, movimiento, impacto, sirena...). También puede seguir agregando dispositivos manualmente ahí.</div>
+        <div class="canvas-hint">Dibuje muros y linderos con el lápiz, o use "Rectángulo" para un cuarto. Cada botón de dispositivo marca su ícono al tocar el croquis; los que son sensores (contactos, impacto, sirenas) se agregan automáticamente al inventario de la sección 03 con el tipo correcto ya elegido — puede editar ubicación y conexión ahí. Las 3 herramientas de cable se arrastran para trazar el recorrido de cada tipo de cableado.</div>
       </section>
 
       <!-- 3 INVENTARIO -->
@@ -824,8 +846,19 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
   let drawing = false, lastX=0, lastY=0;
   let drawingRect = false, rectStart = null, rectSnapshot = null;
   let undoStack = [];
-  let pinExt = 0, pinInt = 0, dvrCount = 0, routerCount = 0;
+  let pinExt = 0, pinInt = 0;
+  let markerCounts = {};
+  let typeCounts = {};
   let croquisTouched = false;
+  const ELEMENT_TIPO = {
+    'mark-cpuerta': 'Contacto de puerta',
+    'mark-cventana': 'Contacto de ventana',
+    'mark-clanford': 'Contacto puerta Lanford',
+    'mark-impacto': 'Sensor de impacto (rotura de vidrio)',
+    'mark-sirena': 'Sirena',
+    'mark-perifoneo': 'Sirena de perifoneo'
+  };
+  const LINE_COLORS = { 'line-utp': '#2F6FE0', 'line-elec': '#D93B3B', 'line-sensor': '#D9A62F' };
 
   function sizeCanvas(){
     const rect = canvas.getBoundingClientRect();
@@ -882,11 +915,12 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     const ubic = kind==='pin-ext' ? 'Exterior' : 'Interior';
     return addCamRow({ubic, ref: 'Croquis #'+n});
   }
-  function stampMarker(x,y,kind){
-    const isDvr = kind==='mark-dvr';
-    const bg = isDvr ? getCss('--ink') : getCss('--warn');
-    const fg = isDvr ? getCss('--sheet') : getCss('--ink');
-    const n = isDvr ? (++dvrCount) : (++routerCount);
+  const INFRA_COLOR = { 'mark-dvr': '--ink', 'mark-router': '--warn', 'mark-expansor': '--signal', 'mark-relay': '--accent' };
+  function stampInfra(x,y,kind){
+    const bg = getCss(INFRA_COLOR[kind] || '--ink');
+    const fg = (kind==='mark-dvr') ? getCss('--sheet') : getCss('--ink');
+    markerCounts[kind] = (markerCounts[kind]||0) + 1;
+    const n = markerCounts[kind];
     const w=32, h=26;
     ctx.beginPath();
     if(ctx.roundRect){ ctx.roundRect(x-w/2, y-h/2, w, h, 6); } else { ctx.rect(x-w/2, y-h/2, w, h); }
@@ -897,13 +931,13 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     ctx.fillStyle = fg; ctx.strokeStyle = fg;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
-    if(isDvr){
+    if(kind==='mark-dvr'){
       /* control panel icon: box with two indicator lights */
       ctx.lineWidth = 1.5;
       ctx.strokeRect(x-9, y-7, 18, 14);
       ctx.beginPath(); ctx.arc(x-4, y, 2.3, 0, Math.PI*2); ctx.fill();
       ctx.beginPath(); ctx.arc(x+4, y, 2.3, 0, Math.PI*2); ctx.fill();
-    } else {
+    } else if(kind==='mark-router'){
       /* keypad icon: grid of buttons */
       for(let r=-1;r<=1;r++){
         for(let c=-1;c<=1;c++){
@@ -912,6 +946,20 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
           ctx.fill();
         }
       }
+    } else if(kind==='mark-expansor'){
+      /* expander icon: chip with pins */
+      ctx.lineWidth = 1.3;
+      ctx.strokeRect(x-7, y-6, 14, 12);
+      for(let i=-1;i<=1;i++){
+        ctx.beginPath(); ctx.moveTo(x-7,y+i*4); ctx.lineTo(x-10,y+i*4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x+7,y+i*4); ctx.lineTo(x+10,y+i*4); ctx.stroke();
+      }
+    } else if(kind==='mark-relay'){
+      /* relay icon: switch symbol */
+      ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(x-7,y+5,1.8,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x+7,y+5,1.8,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x-7,y+5); ctx.lineTo(x+5,y-6); ctx.stroke();
     }
 
     if(n>1){
@@ -920,6 +968,65 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(String(n), x+w/2-6, y-h/2+7);
     }
+  }
+
+  function stampElement(x,y,kind){
+    const tipo = ELEMENT_TIPO[kind];
+    typeCounts[kind] = (typeCounts[kind]||0) + 1;
+    const n = typeCounts[kind];
+    const bg = getCss('--ink'), fg = getCss('--sheet');
+    const w=26, h=22;
+    ctx.beginPath();
+    if(ctx.roundRect){ ctx.roundRect(x-w/2, y-h/2, w, h, 5); } else { ctx.rect(x-w/2, y-h/2, w, h); }
+    ctx.fillStyle = bg; ctx.fill();
+    ctx.lineWidth=1.4; ctx.strokeStyle = getCss('--sheet'); ctx.stroke();
+    ctx.fillStyle = fg; ctx.strokeStyle = fg;
+    ctx.lineCap='round'; ctx.lineJoin='round';
+
+    if(kind==='mark-cpuerta' || kind==='mark-cventana' || kind==='mark-clanford'){
+      /* magnetic contact icon: two gapped blocks + letter */
+      ctx.fillRect(x-8,y-3,6,6);
+      ctx.fillRect(x+2,y-3,6,6);
+      const letter = kind==='mark-cpuerta' ? 'P' : (kind==='mark-cventana' ? 'V' : 'L');
+      ctx.font='700 8px IBM Plex Mono, monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(letter, x, y+9);
+    } else if(kind==='mark-impacto'){
+      /* cracked glass icon */
+      ctx.lineWidth = 1.3;
+      ctx.strokeRect(x-8, y-7, 16, 14);
+      ctx.beginPath();
+      ctx.moveTo(x-6,y-6); ctx.lineTo(x-1,y-1); ctx.lineTo(x-4,y+2); ctx.lineTo(x+2,y+6);
+      ctx.lineWidth = 1.4; ctx.stroke();
+    } else if(kind==='mark-sirena'){
+      /* siren / bell icon */
+      ctx.beginPath();
+      ctx.arc(x, y-2, 7, Math.PI, 0, false);
+      ctx.lineTo(x+9, y+5);
+      ctx.lineTo(x-9, y+5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y+7, 1.8, 0, Math.PI*2); ctx.fill();
+    } else if(kind==='mark-perifoneo'){
+      /* horn / megaphone icon */
+      ctx.beginPath();
+      ctx.moveTo(x-9,y-3);
+      ctx.lineTo(x-2,y-7);
+      ctx.lineTo(x+9,y-7);
+      ctx.lineTo(x+9,y+7);
+      ctx.lineTo(x-2,y+7);
+      ctx.lineTo(x-9,y+3);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    if(n>1){
+      ctx.fillStyle = fg;
+      ctx.font = '700 8px IBM Plex Mono, monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(String(n), x+w/2-5, y-h/2+6);
+    }
+    return addCamRow({tipo, ubic:'Interior', modo:'Alámbrico', ref:'Croquis #'+n});
   }
   function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 
@@ -935,11 +1042,16 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       undoStack[undoStack.length-1].row = row;
       return;
     }
-    if(tool==='mark-dvr' || tool==='mark-router'){
-      stampMarker(x,y,tool);
+    if(tool==='mark-dvr' || tool==='mark-router' || tool==='mark-expansor' || tool==='mark-relay'){
+      stampInfra(x,y,tool);
       return;
     }
-    if(tool==='rect'){
+    if(ELEMENT_TIPO[tool]){
+      const row = stampElement(x,y,tool);
+      undoStack[undoStack.length-1].row = row;
+      return;
+    }
+    if(tool==='rect' || tool.indexOf('line-')===0){
       rectStart = [x,y];
       rectSnapshot = ctx.getImageData(0,0,canvas.width,canvas.height);
       drawingRect = true;
@@ -952,10 +1064,18 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       e.preventDefault();
       const [x,y] = canvasPos(e);
       ctx.putImageData(rectSnapshot, 0, 0);
-      const rx = Math.min(rectStart[0], x), ry = Math.min(rectStart[1], y);
-      const rw = Math.abs(x-rectStart[0]), rh = Math.abs(y-rectStart[1]);
-      ctx.strokeStyle = getCss('--ink'); ctx.lineWidth = 2; ctx.setLineDash([]);
-      ctx.strokeRect(rx, ry, rw, rh);
+      if(tool==='rect'){
+        const rx = Math.min(rectStart[0], x), ry = Math.min(rectStart[1], y);
+        const rw = Math.abs(x-rectStart[0]), rh = Math.abs(y-rectStart[1]);
+        ctx.strokeStyle = getCss('--ink'); ctx.lineWidth = 2; ctx.setLineDash([]);
+        ctx.strokeRect(rx, ry, rw, rh);
+      } else if(LINE_COLORS[tool]){
+        ctx.strokeStyle = LINE_COLORS[tool]; ctx.lineWidth = 3.5; ctx.lineCap = 'round'; ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(rectStart[0], rectStart[1]);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
       return;
     }
     if(!drawing) return;
@@ -989,7 +1109,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     pushUndo();
     const r = canvas.getBoundingClientRect();
     ctx.clearRect(0,0,r.width,r.height);
-    pinExt=0; pinInt=0; dvrCount=0; routerCount=0;
+    pinExt=0; pinInt=0; markerCounts={}; typeCounts={};
   });
 
   /* ---------- signature pads ---------- */
@@ -1072,7 +1192,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       cliente: $('#cliente').value, telefono: $('#telefono').value,
       direccion: $('#direccion').value, referencia: $('#referencia').value,
       tecnico: $('#tecnico').value, fecha: $('#fecha').value, inmueble: $('#inmueble').value,
-      croquis: canvas.toDataURL(), pinExt, pinInt, dvrCount, routerCount,
+      croquis: canvas.toDataURL(), pinExt, pinInt, markerCounts, typeCounts,
       camaras: readCamRows(),
       matCamaras: camBody.children.length, matCajas: $('#matCajas').value,
       matBalun: $('#matBalun').value, matBorneras: $('#matBorneras').value,
@@ -1109,7 +1229,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     (d.camaras||[]).forEach(c=>addCamRow(c));
     renumber(); recalc();
 
-    pinExt = d.pinExt||0; pinInt = d.pinInt||0; dvrCount = d.dvrCount||0; routerCount = d.routerCount||0;
+    pinExt = d.pinExt||0; pinInt = d.pinInt||0; markerCounts = d.markerCounts||{}; typeCounts = d.typeCounts||{};
     if(d.croquis){ loadDataUrlInto(canvas, ctx, d.croquis); }
 
     $('#matCajas').value = d.matCajas||0;
@@ -1150,7 +1270,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     ['cliente','telefono','direccion','referencia','tecnico','inmueble','notasElectrico','notasRec','obsGenerales'].forEach(id=>$('#'+id).value='');
     setDefaultDate();
     camBody.innerHTML=''; camSeq=0; recalc();
-    const r=canvas.getBoundingClientRect(); ctx.clearRect(0,0,r.width,r.height); pinExt=0; pinInt=0; dvrCount=0; routerCount=0; undoStack=[];
+    const r=canvas.getBoundingClientRect(); ctx.clearRect(0,0,r.width,r.height); pinExt=0; pinInt=0; markerCounts={}; typeCounts={}; undoStack=[];
     ['matCajas','matBalun','matBorneras','matSD','matDiscos','puntosElectricos','matExpansores','matRelay'].forEach(id=>$('#'+id).value=0);
     $('#matDiscoCap').value='';
     ['recCanaletaM','recPvcM','recEmtM','recMangueraM','recGrapasCant'].forEach(id=>$('#'+id).value='');
