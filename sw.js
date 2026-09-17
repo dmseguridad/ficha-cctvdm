@@ -1,5 +1,9 @@
-const CACHE = 'cctv-ficha-v2';
-const SHELL = ['./', './manifest.json', './icon.svg', './logo.png'];
+const CACHE = 'dm-fichas-v1';
+const SHELL = [
+  './', './manifest.json', './icon.svg', './logo.png',
+  './cctv/index.html', './cctv/logo.png',
+  './vehicular/index.html', './vehicular/logo.png'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(

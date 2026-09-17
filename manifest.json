@@ -1,7 +1,7 @@
 {
-  "name": "Ficha de Inspección CCTV",
-  "short_name": "CCTV Ficha",
-  "description": "Formulario de campo para inspecciones de cámaras de seguridad",
+  "name": "DM Seguridad Digital — Fichas de Campo",
+  "short_name": "DM Fichas",
+  "description": "Fichas de inspección de campo: CCTV y control de acceso vehicular",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
