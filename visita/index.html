@@ -184,7 +184,14 @@ button{font-family:'Public Sans', sans-serif; cursor:pointer;}
 .cam-table td.equipo{font-weight:600; white-space:nowrap;}
 .cam-table td.tiene{width:64px; text-align:center;}
 .cam-table td.tiene input[type=checkbox]{width:18px; height:18px; accent-color:var(--accent);}
+.cam-table td.interesa{width:84px; text-align:center;}
+.cam-table td.interesa input[type=checkbox]{width:18px; height:18px; accent-color:var(--signal);}
 .cam-table input, .cam-table select{padding:6px 8px; font-size:13.5px;}
+
+.legend{display:flex; gap:16px; margin-top:8px; flex-wrap:wrap;}
+.legend span{font-size:12px; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+.legend .sw{width:11px; height:11px; border-radius:50%; display:inline-block;}
+.legend .sw.sq{border-radius:3px;}
 
 /* photo upload */
 .photo-drop{border:1.5px dashed var(--line-strong); border-radius:10px; padding:18px; text-align:center; background:var(--paper);}
@@ -263,7 +270,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       <div class="rail-menu" id="railMenu" hidden>
         <a href="#s1"><span class="n">01</span> Datos de la visita</a>
         <a href="#s2"><span class="n">02</span> Foto del local</a>
-        <a href="#s3"><span class="n">03</span> Equipos actuales</a>
+        <a href="#s3"><span class="n">03</span> Equipos del cliente</a>
         <a href="#s4"><span class="n">04</span> Interés y seguimiento</a>
       </div>
     </nav>
@@ -331,14 +338,14 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
         <div class="sheet-head">
           <div class="stamp">03</div>
           <div>
-            <h2>Equipos actuales del cliente</h2>
-            <div class="sub">Marque los sistemas que el cliente ya tiene instalados, con marca y cantidad</div>
+            <h2>Equipos del cliente</h2>
+            <div class="sub">Identifique qué sistemas ya tiene el cliente y en cuáles está interesado</div>
           </div>
         </div>
         <div class="cam-scroll">
           <table class="cam-table">
             <thead>
-              <tr><th>Equipo</th><th>¿Tiene?</th><th>Marca</th><th>Cantidad</th></tr>
+              <tr><th>Equipo</th><th>¿Tiene?</th><th>Marca</th><th>Cantidad</th><th>¿Le interesa?</th></tr>
             </thead>
             <tbody>
               <tr>
@@ -346,33 +353,42 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
                 <td class="tiene"><input type="checkbox" id="eqCamTiene"></td>
                 <td><input type="text" id="eqCamMarca" placeholder="Marca"></td>
                 <td><input type="number" min="0" id="eqCamCant" placeholder="0"></td>
+                <td class="interesa"><input type="checkbox" id="eqCamInteresa"></td>
               </tr>
               <tr>
                 <td class="equipo">Cerco eléctrico</td>
                 <td class="tiene"><input type="checkbox" id="eqCercoTiene"></td>
                 <td><input type="text" id="eqCercoMarca" placeholder="Marca"></td>
                 <td><input type="number" min="0" id="eqCercoCant" placeholder="0"></td>
+                <td class="interesa"><input type="checkbox" id="eqCercoInteresa"></td>
               </tr>
               <tr>
                 <td class="equipo">Alarma</td>
                 <td class="tiene"><input type="checkbox" id="eqAlarmaTiene"></td>
                 <td><input type="text" id="eqAlarmaMarca" placeholder="Marca"></td>
                 <td><input type="number" min="0" id="eqAlarmaCant" placeholder="0"></td>
+                <td class="interesa"><input type="checkbox" id="eqAlarmaInteresa"></td>
               </tr>
               <tr>
                 <td class="equipo">Internet Starlink</td>
                 <td class="tiene"><input type="checkbox" id="eqStarlinkTiene"></td>
                 <td><input type="text" id="eqStarlinkMarca" placeholder="Marca"></td>
                 <td><input type="number" min="0" id="eqStarlinkCant" placeholder="0"></td>
+                <td class="interesa"><input type="checkbox" id="eqStarlinkInteresa"></td>
               </tr>
               <tr>
                 <td class="equipo">Videoportero</td>
                 <td class="tiene"><input type="checkbox" id="eqVideoTiene"></td>
                 <td><input type="text" id="eqVideoMarca" placeholder="Marca"></td>
                 <td><input type="number" min="0" id="eqVideoCant" placeholder="0"></td>
+                <td class="interesa"><input type="checkbox" id="eqVideoInteresa"></td>
               </tr>
             </tbody>
           </table>
+        </div>
+        <div class="legend" style="margin-top:10px;">
+          <span><span class="sw sq" style="background:var(--accent)"></span>¿Tiene? — el cliente ya cuenta con ese sistema</span>
+          <span><span class="sw sq" style="background:var(--signal)"></span>¿Le interesa? — quiere cotización nueva o ampliación</span>
         </div>
         <div class="stats" id="eqStats"></div>
       </section>
@@ -532,15 +548,20 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
   }
   function setDefaultDate(){ $('#fecha').value = new Date().toISOString().slice(0,10); }
 
-  /* ---------- equipos actuales ---------- */
+  /* ---------- equipos del cliente ---------- */
   const EQUIPOS = ['eqCam','eqCerco','eqAlarma','eqStarlink','eqVideo'];
   function recalcEquipos(){
-    const total = EQUIPOS.filter(id=>$('#'+id+'Tiene').checked).length;
+    const tiene = EQUIPOS.filter(id=>$('#'+id+'Tiene').checked).length;
+    const interesa = EQUIPOS.filter(id=>$('#'+id+'Interesa').checked).length;
     $('#eqStats').innerHTML = `
-      <div class="stat accent"><div class="v mono">${total}</div><div class="k">Sistemas que ya tiene</div></div>
+      <div class="stat accent"><div class="v mono">${tiene}</div><div class="k">Sistemas que ya tiene</div></div>
+      <div class="stat signal"><div class="v mono">${interesa}</div><div class="k">Sistemas de interés</div></div>
     `;
   }
-  EQUIPOS.forEach(id=>$('#'+id+'Tiene').addEventListener('change', recalcEquipos));
+  EQUIPOS.forEach(id=>{
+    $('#'+id+'Tiene').addEventListener('change', recalcEquipos);
+    $('#'+id+'Interesa').addEventListener('change', recalcEquipos);
+  });
 
   /* ---------- foto del local ---------- */
   let fotoDataUrl = '';
@@ -613,11 +634,11 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       direccion: $('#direccion').value, referencia: $('#referencia').value,
       tipoLocal: $('#tipoLocal').value,
       foto: fotoDataUrl,
-      eqCamTiene: $('#eqCamTiene').checked, eqCamMarca: $('#eqCamMarca').value, eqCamCant: $('#eqCamCant').value,
-      eqCercoTiene: $('#eqCercoTiene').checked, eqCercoMarca: $('#eqCercoMarca').value, eqCercoCant: $('#eqCercoCant').value,
-      eqAlarmaTiene: $('#eqAlarmaTiene').checked, eqAlarmaMarca: $('#eqAlarmaMarca').value, eqAlarmaCant: $('#eqAlarmaCant').value,
-      eqStarlinkTiene: $('#eqStarlinkTiene').checked, eqStarlinkMarca: $('#eqStarlinkMarca').value, eqStarlinkCant: $('#eqStarlinkCant').value,
-      eqVideoTiene: $('#eqVideoTiene').checked, eqVideoMarca: $('#eqVideoMarca').value, eqVideoCant: $('#eqVideoCant').value,
+      eqCamTiene: $('#eqCamTiene').checked, eqCamMarca: $('#eqCamMarca').value, eqCamCant: $('#eqCamCant').value, eqCamInteresa: $('#eqCamInteresa').checked,
+      eqCercoTiene: $('#eqCercoTiene').checked, eqCercoMarca: $('#eqCercoMarca').value, eqCercoCant: $('#eqCercoCant').value, eqCercoInteresa: $('#eqCercoInteresa').checked,
+      eqAlarmaTiene: $('#eqAlarmaTiene').checked, eqAlarmaMarca: $('#eqAlarmaMarca').value, eqAlarmaCant: $('#eqAlarmaCant').value, eqAlarmaInteresa: $('#eqAlarmaInteresa').checked,
+      eqStarlinkTiene: $('#eqStarlinkTiene').checked, eqStarlinkMarca: $('#eqStarlinkMarca').value, eqStarlinkCant: $('#eqStarlinkCant').value, eqStarlinkInteresa: $('#eqStarlinkInteresa').checked,
+      eqVideoTiene: $('#eqVideoTiene').checked, eqVideoMarca: $('#eqVideoMarca').value, eqVideoCant: $('#eqVideoCant').value, eqVideoInteresa: $('#eqVideoInteresa').checked,
       interes: (document.querySelector('input[name=interes]:checked')||{}).value || '',
       cotizacion: (document.querySelector('input[name=cotizacion]:checked')||{}).value || '',
       fechaSeguimiento: $('#fechaSeguimiento').value,
@@ -632,11 +653,11 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     $('#direccion').value = d.direccion||''; $('#referencia').value = d.referencia||'';
     $('#tipoLocal').value = d.tipoLocal||'';
     showFotoPreview(d.foto||'');
-    $('#eqCamTiene').checked = !!d.eqCamTiene; $('#eqCamMarca').value = d.eqCamMarca||''; $('#eqCamCant').value = d.eqCamCant||'';
-    $('#eqCercoTiene').checked = !!d.eqCercoTiene; $('#eqCercoMarca').value = d.eqCercoMarca||''; $('#eqCercoCant').value = d.eqCercoCant||'';
-    $('#eqAlarmaTiene').checked = !!d.eqAlarmaTiene; $('#eqAlarmaMarca').value = d.eqAlarmaMarca||''; $('#eqAlarmaCant').value = d.eqAlarmaCant||'';
-    $('#eqStarlinkTiene').checked = !!d.eqStarlinkTiene; $('#eqStarlinkMarca').value = d.eqStarlinkMarca||''; $('#eqStarlinkCant').value = d.eqStarlinkCant||'';
-    $('#eqVideoTiene').checked = !!d.eqVideoTiene; $('#eqVideoMarca').value = d.eqVideoMarca||''; $('#eqVideoCant').value = d.eqVideoCant||'';
+    $('#eqCamTiene').checked = !!d.eqCamTiene; $('#eqCamMarca').value = d.eqCamMarca||''; $('#eqCamCant').value = d.eqCamCant||''; $('#eqCamInteresa').checked = !!d.eqCamInteresa;
+    $('#eqCercoTiene').checked = !!d.eqCercoTiene; $('#eqCercoMarca').value = d.eqCercoMarca||''; $('#eqCercoCant').value = d.eqCercoCant||''; $('#eqCercoInteresa').checked = !!d.eqCercoInteresa;
+    $('#eqAlarmaTiene').checked = !!d.eqAlarmaTiene; $('#eqAlarmaMarca').value = d.eqAlarmaMarca||''; $('#eqAlarmaCant').value = d.eqAlarmaCant||''; $('#eqAlarmaInteresa').checked = !!d.eqAlarmaInteresa;
+    $('#eqStarlinkTiene').checked = !!d.eqStarlinkTiene; $('#eqStarlinkMarca').value = d.eqStarlinkMarca||''; $('#eqStarlinkCant').value = d.eqStarlinkCant||''; $('#eqStarlinkInteresa').checked = !!d.eqStarlinkInteresa;
+    $('#eqVideoTiene').checked = !!d.eqVideoTiene; $('#eqVideoMarca').value = d.eqVideoMarca||''; $('#eqVideoCant').value = d.eqVideoCant||''; $('#eqVideoInteresa').checked = !!d.eqVideoInteresa;
     recalcEquipos();
     if(d.interes){ const r=document.querySelector(`input[name=interes][value="${d.interes}"]`); if(r) r.checked=true; }
     if(d.cotizacion){ const r=document.querySelector(`input[name=cotizacion][value="${d.cotizacion}"]`); if(r) r.checked=true; }
@@ -657,6 +678,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       $('#'+id+'Tiene').checked = false;
       $('#'+id+'Marca').value = '';
       $('#'+id+'Cant').value = '';
+      $('#'+id+'Interesa').checked = false;
     });
     recalcEquipos();
     $$('input[type=radio]').forEach(r=>r.checked=false);
