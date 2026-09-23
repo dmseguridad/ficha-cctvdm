@@ -1,11 +1,12 @@
-const CACHE = 'dm-fichas-v5';
+const CACHE = 'dm-fichas-v6';
 const SHELL = [
   './', './manifest.json', './icon.svg', './logo.png', './apple-touch-icon.png',
   './cctv/index.html', './cctv/logo.png',
   './vehicular/index.html', './vehicular/logo.png',
   './alarmas/index.html', './alarmas/logo.png',
   './cerco/index.html', './cerco/logo.png',
-  './videoporteros/index.html', './videoporteros/logo.png'
+  './videoporteros/index.html', './videoporteros/logo.png',
+  './visita/index.html', './visita/logo.png'
 ];
 
 self.addEventListener('install', e => {
