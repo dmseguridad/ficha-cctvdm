@@ -32,6 +32,8 @@
   --warn-soft:#F1E2C2;
   --danger:#B23A32;
   --danger-soft:#F3DBD8;
+  --existing:#6B7280;
+  --existing-soft:#E4E6E9;
   --shadow: 0 1px 0 rgba(20,28,36,0.04);
 }
 @media (prefers-color-scheme: dark){
@@ -54,6 +56,8 @@
     --warn-soft:#3A2C15;
     --danger:#E17A72;
     --danger-soft:#3C201E;
+    --existing:#9AA3AD;
+    --existing-soft:#2A3138;
     --shadow: 0 1px 0 rgba(0,0,0,0.2);
   }
 }
@@ -76,6 +80,8 @@
   --warn-soft:#3A2C15;
   --danger:#E17A72;
   --danger-soft:#3C201E;
+  --existing:#9AA3AD;
+  --existing-soft:#2A3138;
   --shadow: 0 1px 0 rgba(0,0,0,0.2);
 }
 
@@ -366,8 +372,9 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
           <button class="tool-btn active" data-tool="pencil">✏ Lápiz</button>
           <button class="tool-btn" data-tool="eraser">🧽 Borrador</button>
           <button class="tool-btn" data-tool="rect">▭ Rectángulo</button>
-          <button class="tool-btn" data-tool="pin-ext"><span class="dot" style="background:var(--accent)"></span>Cámara exterior</button>
-          <button class="tool-btn" data-tool="pin-int"><span class="dot" style="background:var(--signal)"></span>Cámara interior</button>
+          <button class="tool-btn" data-tool="pin-ext"><span class="dot" style="background:var(--accent)"></span>Cámara exterior (nueva)</button>
+          <button class="tool-btn" data-tool="pin-int"><span class="dot" style="background:var(--signal)"></span>Cámara interior (nueva)</button>
+          <button class="tool-btn" data-tool="pin-existing"><span class="dot" style="background:var(--existing)"></span>Cámara existente</button>
           <button class="tool-btn" data-tool="mark-dvr">📼 Grabador</button>
           <button class="tool-btn" data-tool="mark-router">📶 Router WiFi</button>
           <button class="tool-btn" data-tool="line-utp">🔵 Cable UTP</button>
@@ -378,14 +385,15 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
         </div>
         <div class="canvas-wrap"><canvas id="croquis"></canvas></div>
         <div class="legend">
-          <span><span class="sw" style="background:var(--accent)"></span>Cámara exterior (numerada al colocarla)</span>
-          <span><span class="sw" style="background:var(--signal)"></span>Cámara interior (numerada al colocarla)</span>
+          <span><span class="sw" style="background:var(--accent)"></span>Cámara exterior nueva (numerada al colocarla)</span>
+          <span><span class="sw" style="background:var(--signal)"></span>Cámara interior nueva (numerada al colocarla)</span>
+          <span><span class="sw" style="background:var(--existing)"></span>Cámara existente (ya instalada)</span>
           <span>📼 Grabador (DVR/NVR)</span>
           <span>📶 Router WiFi</span>
           <span>🔵 Cable UTP</span>
           <span>🔴 Cable eléctrico</span>
         </div>
-        <div class="canvas-hint">Dibuje muros, accesos y linderos con el lápiz, o use "Rectángulo" (arrastre para dibujar un cuarto o el perímetro). Los botones de cámara, grabador y router numeran o marcan la posición al tocar el croquis. Cada cámara marcada se agrega automáticamente al inventario de la sección 03 (también puede seguir agregando cámaras manualmente ahí).</div>
+        <div class="canvas-hint">Dibuje muros, accesos y linderos con el lápiz, o use "Rectángulo" (arrastre para dibujar un cuarto o el perímetro). Los botones de cámara, grabador y router numeran o marcan la posición al tocar el croquis. Al colocar una cámara, arrastre levemente hacia la dirección a la que apunta antes de soltar — el cono de visión gira hacia allí (si no arrastra, queda apuntando hacia arriba). Cada cámara marcada se agrega automáticamente al inventario de la sección 03 (también puede seguir agregando cámaras manualmente ahí).</div>
       </section>
 
       <!-- 3 INVENTARIO -->
@@ -823,8 +831,9 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
   let tool = 'pencil';
   let drawing = false, lastX=0, lastY=0;
   let drawingRect = false, rectStart = null, rectSnapshot = null;
+  let placingPin = false, pinStart = null, pinKind = null, pinSnapshot = null, pendingUndoEntry = null;
   let undoStack = [];
-  let pinExt = 0, pinInt = 0, dvrCount = 0, routerCount = 0;
+  let pinExt = 0, pinInt = 0, pinExisting = 0, dvrCount = 0, routerCount = 0;
   const LINE_COLORS = { 'line-utp': '#2F6FE0', 'line-elec': '#D93B3B' };
   let croquisTouched = false;
 
@@ -844,7 +853,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
   window.addEventListener('resize', sizeCanvas);
 
   function pushUndo(){
-    undoStack.push({url: canvas.toDataURL(), pinExt, pinInt});
+    undoStack.push({url: canvas.toDataURL(), pinExt, pinInt, pinExisting});
     if(undoStack.length>25) undoStack.shift();
   }
   function loadDataUrlInto(cv, cx, url, cb){
@@ -868,9 +877,42 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     return [cx,cy];
   }
 
-  function stampPin(x,y,kind){
-    const color = kind==='pin-ext' ? getCss('--accent') : getCss('--signal');
-    const n = kind==='pin-ext' ? (++pinExt) : (++pinInt);
+  function colorForPinKind(kind){
+    if(kind==='pin-ext') return getCss('--accent');
+    if(kind==='pin-int') return getCss('--signal');
+    return getCss('--existing');
+  }
+  function peekPinNumber(kind){
+    if(kind==='pin-ext') return pinExt+1;
+    if(kind==='pin-int') return pinInt+1;
+    return pinExisting+1;
+  }
+  function dragAngle(start, cur){
+    const dx = cur[0]-start[0], dy = cur[1]-start[1];
+    if(Math.hypot(dx,dy) < 6) return 0;
+    let deg = Math.atan2(dx, -dy) * 180/Math.PI;
+    if(deg<0) deg += 360;
+    return deg;
+  }
+  function drawCameraGlyph(x, y, color, n, angleDeg){
+    const spreadDeg = 36, len = 42;
+    const rad = a => a * Math.PI/180;
+    const angle = rad(angleDeg - 90);
+    const spread = rad(spreadDeg);
+    const a1 = angle - spread/2, a2 = angle + spread/2;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + len*Math.cos(a1), y + len*Math.sin(a1));
+    ctx.arc(x, y, len, a1, a2);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.28;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+
     ctx.beginPath();
     ctx.arc(x,y,11,0,Math.PI*2);
     ctx.fillStyle = color;
@@ -880,8 +922,17 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     ctx.font = '600 11px IBM Plex Mono, monospace';
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(String(n), x, y+0.5);
-    const ubic = kind==='pin-ext' ? 'Exterior' : 'Interior';
-    return addCamRow({ubic, ref: 'Croquis #'+n});
+  }
+  function stampPin(x,y,kind,angleDeg){
+    const color = colorForPinKind(kind);
+    let n;
+    if(kind==='pin-ext') n = ++pinExt;
+    else if(kind==='pin-int') n = ++pinInt;
+    else n = ++pinExisting;
+    drawCameraGlyph(x, y, color, n, angleDeg);
+    const ubic = kind==='pin-int' ? 'Interior' : 'Exterior';
+    const ref = kind==='pin-existing' ? ('Croquis #'+n+' (existente)') : ('Croquis #'+n);
+    return addCamRow({ubic, ref});
   }
   function stampMarker(x,y,kind){
     const isDvr = kind==='mark-dvr';
@@ -936,9 +987,12 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     croquisTouched = true;
     pushUndo();
     const [x,y] = canvasPos(e);
-    if(tool==='pin-ext' || tool==='pin-int'){
-      const row = stampPin(x,y,tool);
-      undoStack[undoStack.length-1].row = row;
+    if(tool==='pin-ext' || tool==='pin-int' || tool==='pin-existing'){
+      pinStart = [x,y];
+      pinKind = tool;
+      pinSnapshot = ctx.getImageData(0,0,canvas.width,canvas.height);
+      placingPin = true;
+      pendingUndoEntry = undoStack[undoStack.length-1];
       return;
     }
     if(tool==='mark-dvr' || tool==='mark-router'){
@@ -954,6 +1008,14 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     drawing = true; lastX=x; lastY=y;
   });
   canvas.addEventListener('pointermove', e=>{
+    if(placingPin){
+      e.preventDefault();
+      const [x,y] = canvasPos(e);
+      ctx.putImageData(pinSnapshot, 0, 0);
+      const angle = dragAngle(pinStart, [x,y]);
+      drawCameraGlyph(pinStart[0], pinStart[1], colorForPinKind(pinKind), peekPinNumber(pinKind), angle);
+      return;
+    }
     if(drawingRect){
       e.preventDefault();
       const [x,y] = canvasPos(e);
@@ -983,7 +1045,17 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     ctx.stroke();
     lastX=x; lastY=y;
   });
-  ['pointerup','pointerleave'].forEach(ev=>canvas.addEventListener(ev, ()=>{ drawing=false; drawingRect=false; }));
+  ['pointerup','pointerleave'].forEach(ev=>canvas.addEventListener(ev, e=>{
+    if(placingPin){
+      const [x,y] = canvasPos(e);
+      ctx.putImageData(pinSnapshot, 0, 0);
+      const angle = dragAngle(pinStart, [x,y]);
+      const row = stampPin(pinStart[0], pinStart[1], pinKind, angle);
+      if(pendingUndoEntry) pendingUndoEntry.row = row;
+      placingPin = false; pinStart = null; pinKind = null; pinSnapshot = null; pendingUndoEntry = null;
+    }
+    drawing=false; drawingRect=false;
+  }));
 
   $('#btnUndo').addEventListener('click', ()=>{
     const last = undoStack.pop();
@@ -991,6 +1063,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       loadDataUrlInto(canvas, ctx, last.url);
       pinExt = last.pinExt;
       pinInt = last.pinInt;
+      pinExisting = last.pinExisting || 0;
       if(last.row && last.row.isConnected){
         last.row.remove();
         renumber();
@@ -1003,7 +1076,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     pushUndo();
     const r = canvas.getBoundingClientRect();
     ctx.clearRect(0,0,r.width,r.height);
-    pinExt=0; pinInt=0; dvrCount=0; routerCount=0;
+    pinExt=0; pinInt=0; pinExisting=0; dvrCount=0; routerCount=0;
   });
 
   /* ---------- signature pads ---------- */
@@ -1086,7 +1159,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
       cliente: $('#cliente').value, telefono: $('#telefono').value,
       direccion: $('#direccion').value, referencia: $('#referencia').value,
       tecnico: $('#tecnico').value, fecha: $('#fecha').value, inmueble: $('#inmueble').value,
-      croquis: canvas.toDataURL(), pinExt, pinInt, dvrCount, routerCount,
+      croquis: canvas.toDataURL(), pinExt, pinInt, pinExisting, dvrCount, routerCount,
       camaras: readCamRows(),
       matCamaras: camBody.children.length, matCajas: $('#matCajas').value,
       matBalun: $('#matBalun').value, matBorneras: $('#matBorneras').value,
@@ -1122,7 +1195,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     (d.camaras||[]).forEach(c=>addCamRow(c));
     renumber(); recalc();
 
-    pinExt = d.pinExt||0; pinInt = d.pinInt||0; dvrCount = d.dvrCount||0; routerCount = d.routerCount||0;
+    pinExt = d.pinExt||0; pinInt = d.pinInt||0; pinExisting = d.pinExisting||0; dvrCount = d.dvrCount||0; routerCount = d.routerCount||0;
     if(d.croquis){ loadDataUrlInto(canvas, ctx, d.croquis); }
 
     $('#matCajas').value = d.matCajas||0;
@@ -1162,7 +1235,7 @@ input:disabled, select:disabled, textarea:disabled{opacity:.6; cursor:not-allowe
     ['cliente','telefono','direccion','referencia','tecnico','inmueble','notasElectrico','notasRec','obsGenerales'].forEach(id=>$('#'+id).value='');
     setDefaultDate();
     camBody.innerHTML=''; camSeq=0; recalc();
-    const r=canvas.getBoundingClientRect(); ctx.clearRect(0,0,r.width,r.height); pinExt=0; pinInt=0; dvrCount=0; routerCount=0; undoStack=[];
+    const r=canvas.getBoundingClientRect(); ctx.clearRect(0,0,r.width,r.height); pinExt=0; pinInt=0; pinExisting=0; dvrCount=0; routerCount=0; undoStack=[];
     ['matCajas','matBalun','matBorneras','matSD','matDiscos','puntosElectricos'].forEach(id=>$('#'+id).value=0);
     $('#matDiscoCap').value='';
     ['recCanaletaM','recPvcM','recEmtM','recMangueraM','recGrapasCant'].forEach(id=>$('#'+id).value='');
